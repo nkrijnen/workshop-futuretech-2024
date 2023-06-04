@@ -1,3 +1,4 @@
+from typing import Callable
 from uuid import UUID
 
 from orders import CreatePurchaseOrderCommand, ChangeShippingAddressCommand, ShipPurchaseOrderCommand
@@ -13,6 +14,11 @@ class PurchaseOrder:
 
     """
     def __init__(self, events: [PurchaseOrderEvent]):
+        self.__handlers: dict[type, Callable] = {
+            ShippingAddressChangedEvent: self.__apply_shipping_address_changed_event,
+            PurchaseOrderShippedEvent: self.__apply_purchase_order_shipped_event,
+            PurchaseOrderCreatedEvent: self.__apply_purchase_order_created_event
+        }
         self.__apply(events=events)
 
     def change_shipping_address(self, command: ChangeShippingAddressCommand) -> ShippingAddressChangedEvent:
@@ -35,18 +41,13 @@ class PurchaseOrder:
         return event
 
     def __apply(self, events: [PurchaseOrderEvent]):
-        action_mapping = {
-            "ShippingAddressChangedEvent": lambda obj: self.__apply_shipping_address_changed_event(obj),
-            "PurchaseOrderShippedEvent": lambda obj: self.__apply_purchase_order_shipped_event(obj),
-            "PurchaseOrderCreatedEvent": lambda obj: self.__apply_purchase_order_created_event(obj),
-        }
         for event in events:
-            class_name = event.__class__.__name__
-            if class_name in action_mapping:
-                action = action_mapping[class_name]
-                action(event)
-            else:
-                raise ValueError("Unknown event to handle")
+            event_type = event.__class__
+            if event_type not in self.__handlers:
+                raise ValueError(f"No handler registered for {event_type}")
+
+            handler = self.__handlers[event_type]
+            handler(event)
 
     def __apply_shipping_address_changed_event(self, event: ShippingAddressChangedEvent) -> None:
         self.shipping_address = event.shipping_address
@@ -59,6 +60,11 @@ class PurchaseOrder:
         self.ordered_sets = event.ordered_sets
         self.shipping_address = event.shipping_address
         self.shipped = False
+
+    def __register(self, event_type: type, handler: Callable) -> None:
+        if event_type in self.__handlers:
+            raise ValueError(f"Handler for {event_type} already registered")
+        self.__handlers[event_type] = handler
 
     @staticmethod
     def create(command: CreatePurchaseOrderCommand) -> PurchaseOrderCreatedEvent:

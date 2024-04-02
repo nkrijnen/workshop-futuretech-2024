@@ -20,6 +20,11 @@ node_modules
 
 ### VS Code ###
 .vscode/
+.vs/
+*.sln
+OrderAggregate/obj
+OrderAggregate/bin
 
 ### Mac OS ###
 .DS_Store
+

@@ -8,10 +8,10 @@
 ## Running the tests
 
 ```bash
-cd Project
+cd DomainModel
 dotnet watch test
 ```
 
 ## Adding code
 
-You can add your own tests and models in the `Project` folder.
+You can add your own tests and models in the `DomainModel` folder.
